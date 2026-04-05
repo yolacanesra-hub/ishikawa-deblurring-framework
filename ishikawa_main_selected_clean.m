@@ -1,5 +1,4 @@
-function ishikawa_main_selected_clean()
-
+function ishikawa_main_selected_clean_plos_FINAL()
 
 clc; clear; close all;
 rng(0);
@@ -35,7 +34,7 @@ imageLabels = { ...
 
 numImages = length(imageFiles);
 
-fprintf('Toplam %d goruntu islenecek:\n', numImages);
+fprintf('Toplam %d goruntu islenecek.\n', numImages);
 
 %% ================= PARAMETERS =================
 PSF = fspecial('motion', 15, 0);
@@ -48,14 +47,21 @@ tau_reg = 0.15;
 lambda_reg = 0.01;
 maxIter = 80;
 
-% TV icin iyilestirilmis parametreler
 tv_lambda = 0.005;
 tv_rho    = 1.0;
 tv_iter   = 150;
 
-%% ================= RESULT ARRAYS =================
+%% ================= STORAGE =================
 PSNR_all = nan(numImages,5);
 SSIM_all = nan(numImages,5);
+
+GT_all       = cell(numImages,1);
+Noisy_all    = cell(numImages,1);
+Proposed_all = cell(numImages,1);
+TV_all       = cell(numImages,1);
+Wiener_all   = cell(numImages,1);
+LR_all       = cell(numImages,1);
+FISTA_all    = cell(numImages,1);
 
 %% ================= MAIN LOOP =================
 for n = 1:numImages
@@ -113,45 +119,14 @@ for n = 1:numImages
         compute_ssim_safe(tv,       I), ...
         compute_ssim_safe(fista,    I)];
 
-    %% Figure
-    h = figure('Visible','off','Color','w','Position',[50 50 1600 850]);
-
-    subplot(2,4,1);
-    imshow(I, []);
-    title('Ground Truth');
-
-    subplot(2,4,2);
-    imshow(noisy, []);
-    title('Blurred + Noisy');
-
-    subplot(2,4,3);
-    imshow(proposed, []);
-    title(sprintf('Proposed\nPSNR = %.2f dB\nSSIM = %.4f', PSNR_all(n,1), SSIM_all(n,1)));
-
-    subplot(2,4,4);
-    imshow(tv, []);
-    title(sprintf('TV\nPSNR = %.2f dB\nSSIM = %.4f', PSNR_all(n,4), SSIM_all(n,4)));
-
-    subplot(2,4,5);
-    imshow(wiener, []);
-    title(sprintf('Wiener\nPSNR = %.2f dB\nSSIM = %.4f', PSNR_all(n,2), SSIM_all(n,2)));
-
-    subplot(2,4,6);
-    imshow(lr, []);
-    title(sprintf('LR\nPSNR = %.2f dB\nSSIM = %.4f', PSNR_all(n,3), SSIM_all(n,3)));
-
-    subplot(2,4,7);
-    imshow(fista, []);
-    title(sprintf('FISTA\nPSNR = %.2f dB\nSSIM = %.4f', PSNR_all(n,5), SSIM_all(n,5)));
-
-    subplot(2,4,8);
-    axis off;
-    text(0.1,0.6,imageLabels{n},'FontSize',16,'FontWeight','bold');
-
-    drawnow;
-    set(h, 'PaperPositionMode', 'auto');
-    print(h, fullfile(outputFolder, sprintf('Fig_%d_%s_300dpi.png', n, imageLabels{n})), '-dpng', '-r300');
-    close(h);
+    %% Save outputs for combined figures
+    GT_all{n}       = I;
+    Noisy_all{n}    = noisy;
+    Proposed_all{n} = proposed;
+    TV_all{n}       = tv;
+    Wiener_all{n}   = wiener;
+    LR_all{n}       = lr;
+    FISTA_all{n}    = fista;
 end
 
 %% ================= TABLES =================
@@ -180,36 +155,148 @@ T_SSIM = table( ...
 writetable(T_SSIM, fullfile(outputFolder, 'SSIM_Table.xlsx'));
 
 %% ================= BAR GRAPHS =================
-hBar1 = figure('Color','w');
-bar(PSNR_all(validRows, :));
-set(gca,'XTick',1:sum(validRows), ...
-    'XTickLabel',imageLabels(validRows), ...
-    'XTickLabelRotation',45);
-legend('Proposed','Wiener','LR','TV','FISTA','Location','best');
-title('PSNR Comparison');
-ylabel('dB');
-grid on;
-drawnow;
-set(hBar1, 'PaperPositionMode', 'auto');
+hBar1 = figure('Color','w','Position',[100 100 900 500]);
+bar(PSNR_all(validRows,:), 'LineWidth', 1.0);
+set(gca, 'XTick', 1:sum(validRows), ...
+    'XTickLabel', imageLabels(validRows), ...
+    'XTickLabelRotation', 45, ...
+    'FontSize', 11, ...
+    'LineWidth', 1);
+legend('Proposed','Wiener','LR','TV','FISTA', ...
+    'Location','northoutside','Orientation','horizontal');
+title('PSNR Comparison','FontSize',13,'FontWeight','bold');
+ylabel('dB','FontSize',12);
+grid on; box on;
+set(hBar1,'PaperPositionMode','auto');
 print(hBar1, fullfile(outputFolder, 'PSNR_BarGraph_300dpi.png'), '-dpng', '-r300');
+close(hBar1);
 
-hBar2 = figure('Color','w');
-bar(SSIM_all(validRows, :));
-set(gca,'XTick',1:sum(validRows), ...
-    'XTickLabel',imageLabels(validRows), ...
-    'XTickLabelRotation',45);
-legend('Proposed','Wiener','LR','TV','FISTA','Location','best');
-title('SSIM Comparison');
-ylabel('SSIM');
-grid on;
-drawnow;
-set(hBar2, 'PaperPositionMode', 'auto');
+hBar2 = figure('Color','w','Position',[100 100 900 500]);
+bar(SSIM_all(validRows,:), 'LineWidth', 1.0);
+set(gca, 'XTick', 1:sum(validRows), ...
+    'XTickLabel', imageLabels(validRows), ...
+    'XTickLabelRotation', 45, ...
+    'FontSize', 11, ...
+    'LineWidth', 1);
+legend('Proposed','Wiener','LR','TV','FISTA', ...
+    'Location','northoutside','Orientation','horizontal');
+title('SSIM Comparison','FontSize',13,'FontWeight','bold');
+ylabel('SSIM','FontSize',12);
+grid on; box on;
+set(hBar2,'PaperPositionMode','auto');
 print(hBar2, fullfile(outputFolder, 'SSIM_BarGraph_300dpi.png'), '-dpng', '-r300');
+close(hBar2);
 
-%% ================= IMAGE-WISE SENSITIVITY ANALYSIS =================
+%% ================= FIGURE 2 (NEW - PUBLISHABLE) =================
+% Representative images: Plane, Starfish, Boats
+selectedIdx = [2, 1, 4]; % Plane, Starfish, Boats
+rowTags = {'(A) Plane', '(B) Starfish', '(C) Boats'};
+
+% Zoom region for each selected image: [x y w h]
+% Bunlari goruntuye gore istersen sonra daha iyi ayarlayabiliriz.
+zoomRects = {
+    [120 90 60 60], ...   % Plane
+    [90 110 60 60], ...   % Starfish
+    [110 80 60 60]};      % Boats
+
+savePathFig2 = fullfile(outputFolder, 'Figure2_NEW.png');
+
+create_figure2_publishable( ...
+    GT_all, Noisy_all, Proposed_all, TV_all, FISTA_all, LR_all, Wiener_all, ...
+    PSNR_all, SSIM_all, selectedIdx, rowTags, zoomRects, savePathFig2);
+
+fprintf('Yeni Figure 2 kaydedildi: %s\n', savePathFig2);
+
+%% ================= APPENDIX FIGURE A2 =================
+% Remaining images: Woman, Pirate, Couple
+selectedIdx_A2 = [3, 5, 6]; % Woman, Pirate, Couple
+rowTags_A2 = {'(A) Woman', '(B) Pirate', '(C) Couple'};
+
+% Zoom regions: [x y w h]
+zoomRects_A2 = { ...
+    [90 80 60 60], ...    % Woman
+    [100 90 60 60], ...   % Pirate
+    [110 85 60 60]};      % Couple
+
+savePathA2 = fullfile(outputFolder, 'Appendix_Figure_A2.png');
+
+create_appendix_figureA2( ...
+    GT_all, Noisy_all, Proposed_all, TV_all, FISTA_all, LR_all, Wiener_all, ...
+    PSNR_all, SSIM_all, selectedIdx_A2, rowTags_A2, zoomRects_A2, savePathA2);
+
+fprintf('Appendix Figure A2 kaydedildi: %s\n', savePathA2);
+%% ================= FIGURE 3 =================
 rhoVals   = [0.2 0.4 0.6 0.8 1.0];
 sigmaVals = [0.1 0.2 0.3 0.4 0.5];
 
+planeIdx = 2; % Plane
+I_plane  = GT_all{planeIdx};
+
+blurred_plane = imfilter(I_plane, PSF, 'circular', 'conv');
+noisy_plane   = imnoise(blurred_plane, 'gaussian', 0, noiseVar);
+
+sensPSNR = zeros(length(rhoVals), length(sigmaVals));
+sensSSIM = zeros(length(rhoVals), length(sigmaVals));
+
+for i = 1:length(rhoVals)
+    for j = 1:length(sigmaVals)
+        out = proposed_ishikawa_restore(noisy_plane, PSF, ...
+            rhoVals(i), sigmaVals(j), tau_data, tau_reg, lambda_reg, maxIter);
+
+        out = min(max(out,0),1);
+
+        sensPSNR(i,j) = compute_psnr_manual(out, I_plane);
+        sensSSIM(i,j) = compute_ssim_safe(out, I_plane);
+    end
+end
+
+[SIG, RHO] = meshgrid(sigmaVals, rhoVals);
+
+hFig3 = figure('Color','w','Position',[100 100 1400 600]);
+
+subplot(1,2,1);
+surf(SIG, RHO, sensPSNR);
+shading interp;
+colormap(jet);
+xlabel('\sigma_I','FontSize',12,'FontWeight','bold');
+ylabel('\rho','FontSize',12,'FontWeight','bold');
+zlabel('PSNR (dB)','FontSize',12,'FontWeight','bold');
+title('(A) PSNR','FontSize',13,'FontWeight','bold');
+set(gca,'FontSize',11,'LineWidth',1);
+grid on; box on;
+view(135,30);
+colorbar;
+hold on;
+zChosen1 = compute_psnr_manual( ...
+    min(max(proposed_ishikawa_restore(noisy_plane, PSF, ...
+    rho, sigmaI, tau_data, tau_reg, lambda_reg, maxIter),0),1), I_plane);
+plot3(sigmaI, rho, zChosen1, 'ko', 'MarkerSize', 8, 'LineWidth', 2);
+hold off;
+
+subplot(1,2,2);
+surf(SIG, RHO, sensSSIM);
+shading interp;
+colormap(jet);
+xlabel('\sigma_I','FontSize',12,'FontWeight','bold');
+ylabel('\rho','FontSize',12,'FontWeight','bold');
+zlabel('SSIM','FontSize',12,'FontWeight','bold');
+title('(B) SSIM','FontSize',13,'FontWeight','bold');
+set(gca,'FontSize',11,'LineWidth',1);
+grid on; box on;
+view(135,30);
+colorbar;
+hold on;
+zChosen2 = compute_ssim_safe( ...
+    min(max(proposed_ishikawa_restore(noisy_plane, PSF, ...
+    rho, sigmaI, tau_data, tau_reg, lambda_reg, maxIter),0),1), I_plane);
+plot3(sigmaI, rho, zChosen2, 'ko', 'MarkerSize', 8, 'LineWidth', 2);
+hold off;
+
+set(hFig3,'PaperPositionMode','auto');
+print(hFig3, fullfile(outputFolder, 'Figure3.png'), '-dpng', '-r300');
+close(hFig3);
+
+%% ================= SENSITIVITY TABLES =================
 for n = 1:numImages
 
     fname = imageFiles{n};
@@ -221,29 +308,26 @@ for n = 1:numImages
     end
 
     I_sens = im2double(imread(fpath));
-
     if size(I_sens,3) == 3
         I_sens = rgb2gray(I_sens);
     end
-
     I_sens = mat2gray(I_sens);
 
     blurred_sens = imfilter(I_sens, PSF, 'circular', 'conv');
     noisy_sens   = imnoise(blurred_sens, 'gaussian', 0, noiseVar);
 
-    sensPSNR = zeros(length(rhoVals), length(sigmaVals));
-    sensSSIM = zeros(length(rhoVals), length(sigmaVals));
+    sensPSNR_local = zeros(length(rhoVals), length(sigmaVals));
+    sensSSIM_local = zeros(length(rhoVals), length(sigmaVals));
 
     for i = 1:length(rhoVals)
         for j = 1:length(sigmaVals)
-
             out = proposed_ishikawa_restore(noisy_sens, PSF, ...
                 rhoVals(i), sigmaVals(j), tau_data, tau_reg, lambda_reg, maxIter);
 
             out = min(max(out,0),1);
 
-            sensPSNR(i,j) = compute_psnr_manual(out, I_sens);
-            sensSSIM(i,j) = compute_ssim_safe(out, I_sens);
+            sensPSNR_local(i,j) = compute_psnr_manual(out, I_sens);
+            sensSSIM_local(i,j) = compute_ssim_safe(out, I_sens);
         end
     end
 
@@ -257,8 +341,8 @@ for n = 1:numImages
         colNames{j} = sprintf('sigma_%d', round(sigmaVals(j)*10));
     end
 
-    T_psnr = array2table(sensPSNR, 'VariableNames', colNames, 'RowNames', rowNames);
-    T_ssim = array2table(sensSSIM, 'VariableNames', colNames, 'RowNames', rowNames);
+    T_psnr = array2table(sensPSNR_local, 'VariableNames', colNames, 'RowNames', rowNames);
+    T_ssim = array2table(sensSSIM_local, 'VariableNames', colNames, 'RowNames', rowNames);
 
     label = imageLabels{n};
 
@@ -266,44 +350,10 @@ for n = 1:numImages
         'WriteRowNames', true);
     writetable(T_ssim, fullfile(outputFolder, sprintf('Sensitivity_SSIM_%s.xlsx', label)), ...
         'WriteRowNames', true);
-
-    % Temsili grafik sadece Plane icin
-    if strcmpi(fname, '06.png')
-
-        [SIG, RHO] = meshgrid(sigmaVals, rhoVals);
-
-        hSens1 = figure('Color','w');
-        surf(SIG, RHO, sensPSNR);
-        xlabel('\sigma_I');
-        ylabel('\rho');
-        zlabel('PSNR (dB)');
-        title('Sensitivity Analysis on Plane (PSNR)');
-        shading interp;
-        grid on;
-        view(135,30);
-        drawnow;
-        set(hSens1, 'PaperPositionMode', 'auto');
-        print(hSens1, fullfile(outputFolder, 'Sensitivity_PSNR_Plane_300dpi.png'), '-dpng', '-r300');
-        close(hSens1);
-
-        hSens2 = figure('Color','w');
-        surf(SIG, RHO, sensSSIM);
-        xlabel('\sigma_I');
-        ylabel('\rho');
-        zlabel('SSIM');
-        title('Sensitivity Analysis on Plane (SSIM)');
-        shading interp;
-        grid on;
-        view(135,30);
-        drawnow;
-        set(hSens2, 'PaperPositionMode', 'auto');
-        print(hSens2, fullfile(outputFolder, 'Sensitivity_SSIM_Plane_300dpi.png'), '-dpng', '-r300');
-        close(hSens2);
-    end
 end
 
-fprintf('\nImage-wise sensitivity analysis tamamlandi.\n');
 fprintf('\nTum islemler tamamlandi.\n');
+fprintf('Figure 2 ve Figure 3 son haliyle olusturuldu.\n');
 fprintf('Cikti klasoru: %s\n', outputFolder);
 
 end
