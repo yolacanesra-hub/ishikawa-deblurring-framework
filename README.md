@@ -124,7 +124,7 @@ All data and code underlying the findings of this study are fully available with
 ## 📝 Notes
 
 Parts of the development process were supported by AI-assisted tools. The author is responsible for the final implementation and results.
-
+All convergence plots (e.g., Fig. 4) can be reproduced by running the provided MATLAB scripts.
 ---
 
 ## 📌 Citation
