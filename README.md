@@ -31,8 +31,7 @@ This repository includes the **minimal dataset required to reproduce all results
 
 * PSNR values used in Table 2
 * SSIM values used in Table 3
-* Iteration data used in convergence analysis (Fig. 4)
-* Numerical values used to generate all graphs and figures
+* Numerical values used to generate all tables and figures
 
 All these files are located in:
 
@@ -97,7 +96,8 @@ ishikawa_main_selected_clean
 * Fixed random seed: `rng(0)`
 * Input normalization: `[0,1]`
 * All parameters explicitly defined in the main script
-* All numerical outputs stored and shared in `/data`
+* All numerical outputs are stored and shared in `/data`
+* All figures in the manuscript can be reproduced by running the provided MATLAB scripts
 
 ---
 
@@ -114,7 +114,7 @@ All data and code underlying the findings of this study are fully available with
 * Source code and numerical results:
   https://github.com/yolacanesra-hub/ishikawa-deblurring-framework
 
-* The repository contains all numerical data required to reproduce the results (PSNR, SSIM, iteration data).
+* The repository contains all numerical data required to reproduce the results (PSNR and SSIM values).
 
 * The image dataset (Set12) is publicly available from Kaggle:
   https://www.kaggle.com/datasets/leweihua/set12-231008
@@ -124,7 +124,7 @@ All data and code underlying the findings of this study are fully available with
 ## 📝 Notes
 
 Parts of the development process were supported by AI-assisted tools. The author is responsible for the final implementation and results.
-All convergence plots (e.g., Fig. 4) can be reproduced by running the provided MATLAB scripts.
+
 ---
 
 ## 📌 Citation
